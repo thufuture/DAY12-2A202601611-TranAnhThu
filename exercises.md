@@ -89,7 +89,35 @@ Sửa một ký tự trong `app/main.py` rồi build lại. Với Dockerfile c�
 layer nào được dùng lại từ cache, layer nào phải chạy lại? Nếu bạn đặt
 `COPY . .` lên trước `RUN pip install` thì kết quả khác thế nào?
 
-> *Câu trả lời của bạn*
+> Mình thêm 1 dòng comment vào `app/main.py` rồi build lại, kết quả thật:
+>
+> **Cache được (CACHED):**
+> - `FROM python:3.11-slim` (stage builder)
+> - `RUN addgroup ... && adduser ...` (tạo user `app`)
+> - `COPY requirements.txt .`
+> - `WORKDIR /app`
+> - `RUN pip install --prefix=/install -r requirements.txt` — layer tốn thời
+>   gian nhất (cài toàn bộ dependency) vẫn được tái sử dụng nguyên vẹn
+> - `COPY --from=builder /install /usr/local`
+>
+> **Phải chạy lại (không cache):**
+> - `COPY . .` — vì nội dung thư mục `app/` đã đổi, hash của layer này đổi
+>   theo, Docker buộc phải copy lại
+> - `RUN chown -R app:app /app` — đứng sau `COPY . .` trong Dockerfile nên
+>   cũng mất cache theo (Docker cache theo thứ tự tuyến tính: một layer mất
+>   cache thì mọi layer phía sau nó cũng mất cache theo, dù bản thân lệnh đó
+>   không đổi)
+>
+> Vậy chỉ 2 layer cuối phải chạy lại, còn bước cài đặt hàng chục package
+> (`pip install`) — vốn tốn vài giây tới vài chục giây — được tái sử dụng
+> ngay lập tức.
+>
+> **Nếu đặt `COPY . .` lên TRƯỚC `RUN pip install`:** mọi lần sửa dù chỉ 1
+> ký tự trong code sẽ làm layer `COPY . .` mất cache, kéo theo `RUN pip
+> install` (đứng sau nó) cũng mất cache theo — dù `requirements.txt` không
+> hề đổi. Kết quả: build lại toàn bộ dependency mỗi lần sửa code, biến một
+> lần build vài giây thành vài chục giây, đúng thứ mà nguyên tắc "COPY
+> requirements.txt trước, COPY source sau" trong CP2 cố tình tránh.
 
 ---
 
