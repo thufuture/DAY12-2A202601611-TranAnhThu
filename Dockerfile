@@ -8,7 +8,7 @@ FROM python:3.11-slim AS builder
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ---- Stage 2: runtime — chỉ mang theo kết quả cài đặt, không mang builder ----
 FROM python:3.11-slim
@@ -17,11 +17,10 @@ WORKDIR /app
 
 RUN addgroup --system app && adduser --system --ingroup app app
 
-COPY --from=builder /root/.local /home/app/.local
+COPY --from=builder /install /usr/local
 COPY . .
 
-ENV PATH=/home/app/.local/bin:$PATH \
-    PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1
 
 RUN chown -R app:app /app
 USER app
