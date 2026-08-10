@@ -209,4 +209,4 @@ Ghi lại **một** lỗi bạn gặp khi deploy lên cloud (build fail, health 
 timeout, sai REDIS_URL, app không đọc `$PORT`...): thông báo lỗi là gì, bạn
 tìm ra nguyên nhân bằng cách nào, và sửa ra sao?
 
-> *Câu trả lời của bạn*
+> lỗi ModuleNotFoundError: No module named 'uvicorn', nguyên nhân do pip install --user phụ thuộc $HOME không khớp khi chạy bằng non-root user, cách bạn (mình) tìm ra qua Deploy Logs trên Railway, và cách sửa bằng --prefix=/install copy vào /usr/local.
